@@ -26,7 +26,11 @@ class Station:
         self.energy_table = []
 
         self.gui = gui.Gui()
-        self.time_from, self.time_to, self.station_load, self.desired_charging_time, self.battery_capacity, self.average_time = self.gui.insertSimulationParameter()
+        try:
+            self.time_from, self.time_to, self.station_load, self.desired_charging_time, self.battery_capacity, self.average_time = self.gui.insertSimulationParameter()
+        except ValueError:
+            print('Aborted. Closing app')
+            return
         self.multiplier = 60 // self.desired_charging_time
         self.battery_max = self.battery_capacity
         self.time_between = random.randint(self.time_from, self.time_to)

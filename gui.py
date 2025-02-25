@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from tkinter import PhotoImage
+import os
 from PIL import Image, ImageTk
+import sys
 
 import tkinter as tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -9,17 +11,14 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 class Gui:
     def __init__(self):
         self.flag = 0
+        self.path = self.get_image_path("Motus.ico")
 
     def insertSimulationParameter(self):
         root = tk.Tk()
         root.title("Simulation Parameters")
-        root.geometry("400x400")  
-        path = "C:/Users/Piotr S/Desktop/Tamoil simulation/Motus.ico"
+        root.geometry("400x400") 
 
-        icon = ImageTk.PhotoImage(Image.open(path))
-        root.iconphoto(False, icon)
-
-        root.iconbitmap(path)
+        root.iconbitmap(self.path)
 
 
         font = ('Helvetica', 14)
@@ -115,12 +114,8 @@ class Gui:
         screen_width = root.winfo_screenwidth()  
         screen_height = root.winfo_screenheight()  
         root.geometry(f"{screen_width}x{screen_height}") 
-        path = "C:/Users/Piotr S/Desktop/Tamoil simulation/Motus.ico"
 
-        icon = ImageTk.PhotoImage(Image.open(path))
-        root.iconphoto(False, icon)
-
-        root.iconbitmap(path)
+        root.iconbitmap(self.path)
 
         # Create a frame inside canvas for labels 
         main_frame = tk.Frame(root)
@@ -234,3 +229,11 @@ class Gui:
     
     def getFlag(self):
         return self.flag
+    
+    def get_image_path(self, filename):
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS  # ścieżka dla pyinstaller
+        else:
+            base_path = os.path.dirname(__file__)  # ścieżka w trybie skryptu
+
+        return os.path.join(base_path, filename)
