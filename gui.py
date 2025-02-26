@@ -45,24 +45,24 @@ class Gui:
 
         tk.Label(frame1, text="EVs quantity for simulation", font=font).pack()
         entry1 = tk.Entry(frame1)
-        entry1.insert(0, default_station_load)  # Set default value
+        entry1.insert(0, default_station_load) 
         entry1.pack()
 
         tk.Label(frame2, text="Desired charging time", font=font).pack()
         entry2 = tk.Entry(frame2)
-        entry2.insert(0, default_charging_time)  # Set default value
+        entry2.insert(0, default_charging_time)  
         entry2.pack()
 
         tk.Label(frame3, text="Generate EV arriving time:", font=font).pack()
 
         tk.Label(frame3, text="from:", font=font).pack(side=tk.LEFT)
         entry3 = tk.Entry(frame3)
-        entry3.insert(0, default_time_from)  # Set default value
+        entry3.insert(0, default_time_from)
         entry3.pack(side=tk.LEFT)
 
         tk.Label(frame3, text="to:", font=font).pack(side=tk.LEFT)
         entry4 = tk.Entry(frame3)
-        entry4.insert(0, default_time_to)  # Set default value
+        entry4.insert(0, default_time_to) 
         entry4.pack(side=tk.LEFT)
 
         tk.Label(frame4, text="Or give average time:", font=font).pack()
@@ -72,7 +72,7 @@ class Gui:
 
         tk.Label(frame4, text="Battery capacity:", font=font).pack()
         entry5 = tk.Entry(frame4)
-        entry5.insert(0, default_battery_capacity)  # Set default value
+        entry5.insert(0, default_battery_capacity)
         entry5.pack()
 
         result = []  
@@ -87,12 +87,13 @@ class Gui:
                 average_time = int(entry41.get())
                 print("Saved values:", time_from, time_to, desired_charging_time, station_load)
                 result.extend([time_from, time_to, station_load, desired_charging_time, battery_capacity, average_time])
-                root.quit()  # Close the window when values are saved
+                root.quit() 
                 root.destroy()
             except ValueError:
                 print("Invalid input! Generic values inserted.")
                 result.extend([default_time_from, default_time_to, default_station_load, default_charging_time, default_battery_capacity, default_average_time])
                 root.quit()
+                root.destroy()
 
         save_button = tk.Button(root, text="Save", font=('Helvetica', 15), command=save_values, bg="#b2fab4")
         save_button.pack(pady=10)
@@ -108,7 +109,6 @@ class Gui:
         
         
     def showSimulationParametersWithPlots(self, battery_max, time_table, energy_table, station_load, desired_charging_time, charging_times_data, grid_power_data, battery_capacity_data):
-        # Create the Tkinter window
         root = tk.Tk()
         root.title("Simulation Parameters")
         screen_width = root.winfo_screenwidth()  
@@ -117,7 +117,6 @@ class Gui:
 
         root.iconbitmap(self.path)
 
-        # Create a frame inside canvas for labels 
         main_frame = tk.Frame(root)
         main_frame.place(x=10, y=10)
 
@@ -128,11 +127,9 @@ class Gui:
         label_frame1 = tk.Frame(root)
         label_frame1.place(x=10, y=550)
 
-        # Create a frame for the close button (at the bottom)
         close_frame = tk.Frame(root)
         close_frame.place(x=100, y=750)
 
-        # Add labels inside the frame
         font = ('Helvetica', 14) 
         font1 = ('Helvetica', 20, 'bold') 
 
@@ -173,11 +170,10 @@ class Gui:
         chargAvg_label.pack(fill='x', pady=15)
 
 
-        # Create a frame for the plots
         plot_frame = tk.Frame(root)
         plot_frame.pack(side=tk.RIGHT, padx=10)
 
-        # Plot data
+    
         fig, axes = plt.subplots(3, 1, figsize=(10, 15))
 
         axes[0].plot(grid_power_data, label="Grid Power (kW)")
@@ -202,7 +198,6 @@ class Gui:
 
         plt.tight_layout()
 
-        # Create a canvas to display the plot in Tkinter
         canvas = FigureCanvasTkAgg(fig, master=plot_frame)
         canvas.draw()
         canvas.get_tk_widget().pack()
@@ -224,7 +219,6 @@ class Gui:
         restart_button.grid(row=0, column=1, padx=10, pady=10)
         
         root.protocol("WM_DELETE_WINDOW", close)
-        # Start Tkinter loop
         root.mainloop()
     
     def getFlag(self):
@@ -232,8 +226,8 @@ class Gui:
     
     def get_image_path(self, filename):
         if getattr(sys, 'frozen', False):
-            base_path = sys._MEIPASS  # ścieżka dla pyinstaller
+            base_path = sys._MEIPASS  
         else:
-            base_path = os.path.dirname(__file__)  # ścieżka w trybie skryptu
+            base_path = os.path.dirname(__file__)  
 
         return os.path.join(base_path, filename)
