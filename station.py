@@ -27,15 +27,19 @@ class Station:
 
         self.gui = gui.Gui()
         try:
-            self.time_from, self.time_to, self.station_load, self.desired_charging_time, self.battery_capacity, self.average_time = self.gui.insertSimulationParameter()
+            self.time_from, self.time_to, self.station_load, self.desired_charging_time, self.battery, self.average_time = self.gui.insertSimulationParameter()
         except ValueError:
             print('Aborted. Closing app')
             return
         self.multiplier = 60 // self.desired_charging_time
+        self.battery_capacity = self.battery * 0.8
+        self.battery_lower_limit = self.battery * 0.2
         self.battery_max = self.battery_capacity
         self.time_between = random.randint(self.time_from, self.time_to)
+
         if self.average_time != 0:
             self.time_between = self.average_time
+
         self.env.process(self.run())  
         
     def run(self):
@@ -47,7 +51,7 @@ class Station:
             processes.append(process) 
 
         yield self.env.all_of(processes)
-        self.gui.showSimulationParametersWithPlots(self.battery_max, self.time_table, self.energy_table, self.station_load, self.desired_charging_time, self.charging_times_data, self.grid_power_data, self.battery_capacity_data)
+        self.gui.showSimulationParametersWithPlots(self.battery, self.time_table, self.energy_table, self.station_load, self.desired_charging_time, self.charging_times_data, self.grid_power_data, self.battery_capacity_data)
     
     def car(self, name, arriving_time, charge_duration):
         car = {
@@ -70,7 +74,7 @@ class Station:
 
         available_grid = self.checkGridState()
         available_station, available_slot = self.checkStationAvailability(desired_power)
-        self.checkBatteryState()
+        available_battery = self.checkBatteryState()
 
         print(f"Grid power {available_grid} kW")
 
@@ -88,21 +92,30 @@ class Station:
                 self.updateGridState(desired_power, False)
                 if self.battery_capacity < self.battery_max:
                     self.updateBattery(available_grid - desired_power, True)
+                else:
+                    #raw message to update the graph
+                    self.updateBattery(0, True)
 
             # Add battery
             elif desired_power > available_grid:
                 battery_power_demand = desired_power - available_grid
+                energy_demand = battery_power_demand * (1/self.multiplier)
 
-                if battery_power_demand * (1/self.multiplier) > self.battery_capacity:
-                    battery_power_demand = self.battery_capacity * self.multiplier
+                print(f"Energy demanded {energy_demand}, available {available_battery}")
+
+                if  energy_demand > available_battery:
+                    print("Module managing")
+                    battery_power_demand = (self.battery_capacity - self.battery_lower_limit) * self.multiplier
                     demanded = desired_power - battery_power_demand - available_grid
                     power_to_attach = self.checkModuleToDetach(demanded)
                     max_power = power_to_attach + available_grid + battery_power_demand
                     if max_power != desired_power:
                         charge_duration = int(car['needed_energy'] / max_power * 60)
                         print(f"New charging time {charge_duration}")
-
                     print(f"Charging with grid {available_grid} kW battery: {battery_power_demand} kW modules: {power_to_attach} kW")
+                else:
+                    print("Battery managing")
+                    battery_power_demand = (self.battery_capacity - self.battery_lower_limit) * self.multiplier
 
                 print(f"Charging with grid {available_grid} kW and battery {battery_power_demand} kW")
                 power_to_return = available_grid
@@ -119,15 +132,16 @@ class Station:
                 self.updateGridState(power_to_return, True)
 
                 # Collect data for plots
-                self.grid_power_data.append(self.grid_power)
-                self.battery_capacity_data.append(self.battery_capacity)
-                self.charging_times_data.append(charge_duration)
+
 
         else:
             print(f"{name} is waiting in queue...")
             self.car_queue.append(car)
             return
-    
+        
+
+
+        self.charging_times_data.append(charge_duration)
         self.car_priorities.remove(car)
 
 #MODULES
@@ -153,7 +167,7 @@ class Station:
             sum_power+=power_to_detach
             if sum_power <= 0:
                 sum_power = self.detachModulePartly(demanded_power)
-        print(f"Only {sum_power}/{demanded_power} kW can be applied")
+        print(f"{sum_power}/{demanded_power} kW can be applied")
         return sum_power
     
     def detachModulePartly(self, demanded_power):
@@ -183,12 +197,14 @@ class Station:
         return duration
 
 # GRID
-    def updateGridState(self, power_cut, flag):
+    def updateGridState(self, power_cut, flag): 
         if flag:
             self.grid_power = self.grid_power + power_cut
         else:
             self.grid_power = self.grid_power - power_cut
         print(f"Grid state {self.grid_power} kW")
+        self.grid_power_data.append(self.grid_power)
+
         
     def checkGridState(self):
         print(f"Grid state {self.grid_power} kW")
@@ -203,13 +219,15 @@ class Station:
 
     def updateBattery(self, power_cut, flag):
         if flag:
+            print("Charging battery")
             self.battery_capacity = self.battery_capacity + power_cut*(1/self.multiplier)
             if self.battery_capacity > self.battery_max: 
                 self.battery_capacity = self.battery_max
         else:
             self.battery_capacity = self.battery_capacity - power_cut*(1/self.multiplier)
         print(f"Battery state {self.battery_capacity} kWh")
-    
+        self.battery_capacity_data.append(self.battery_capacity)
+
 # STATION
     def checkStationAvailability(self, desired_power):
         for i, charger in enumerate(self.chargers):

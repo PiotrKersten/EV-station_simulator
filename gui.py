@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tkinter import PhotoImage
 import os
+import seaborn as sns
 from PIL import Image, ImageTk
 import sys
 
@@ -12,7 +13,7 @@ class Gui:
     def __init__(self):
         self.flag = 0
         self.path = self.get_image_path("Motus.ico")
-
+        
     def insertSimulationParameter(self):
         root = tk.Tk()
         root.title("Simulation Parameters")
@@ -174,16 +175,21 @@ class Gui:
         plot_frame.pack(side=tk.RIGHT, padx=10)
 
     
-        fig, axes = plt.subplots(3, 1, figsize=(10, 15))
+        fig, axes = plt.subplots(4, 1, figsize=(10, 15))
 
         axes[0].plot(grid_power_data, label="Grid Power (kW)")
         axes[0].set_xlabel('Time (t.u.)')
         axes[0].xaxis.set_label_coords(0.95, -0.1)
         axes[0].set_ylabel('Grid power (kW)')
         axes[0].set_title('Grid power over time')
-        axes[0].legend()
+
+        max_capacity = max(battery_capacity_data)
+        lower_limit = 0.25 * max_capacity # max_capacity = 0.8 * battery_capacity, lower = 0.2* 1.25* max_capacity = 0.25 * max_capacity
 
         axes[1].plot(battery_capacity_data, label="Battery Capacity (kWh)", color='orange')
+        axes[1].axhline(y=max_capacity, color='red', linestyle='dashed', linewidth=1, label=f'Upper limit 80%')
+        axes[1].axhline(y=lower_limit, color='blue', linestyle='dashed', linewidth=1, label=f'Lower Limit 20%')
+
         axes[1].set_xlabel('Time (t.u.)')
         axes[1].xaxis.set_label_coords(0.95, -0.1)
         axes[1].set_ylabel('Battery capacity (kWh)')
@@ -195,6 +201,13 @@ class Gui:
         axes[2].xaxis.set_label_coords(0.95, -0.1)
         axes[2].set_ylabel('Vehicles quantity')
         axes[2].set_title('Charging time distribution')
+
+        sns.histplot(energy_table, bins=20, kde=True, ax=axes[3], color='blue', edgecolor='black')
+        axes[3].set_xlabel("Energy [kWh]")
+        axes[3].xaxis.set_label_coords(0.95, -0.1)
+        axes[3].set_ylabel('Count')
+        axes[3].set_title("EV's energy needs distribution")
+
 
         plt.tight_layout()
 
