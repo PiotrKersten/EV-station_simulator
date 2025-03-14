@@ -90,11 +90,11 @@ class Station:
                 print(f"Charging with grid only {desired_power} kW")
                 power_to_return = desired_power
                 self.updateGridState(desired_power, False)
-                if self.battery_capacity < self.battery_max:
+                if available_battery < self.battery_max:
                     self.updateBattery(available_grid - desired_power, True)
                 else:
                     #raw message to update the graph
-                    self.updateBattery(0, True)
+                     self.updateBattery(0, True)
 
             # Add battery
             elif desired_power > available_grid:
@@ -103,19 +103,21 @@ class Station:
 
                 print(f"Energy demanded {energy_demand}, available {available_battery}")
 
-                if  energy_demand > available_battery:
+                if  energy_demand > available_battery or (available_battery-energy_demand) < self.battery_lower_limit:
                     print("Module managing")
-                    battery_power_demand = (self.battery_capacity - self.battery_lower_limit) * self.multiplier
+                    battery_power_demand = (available_battery - self.battery_lower_limit) * self.multiplier
                     demanded = desired_power - battery_power_demand - available_grid
+                    print(available_battery, self.battery_lower_limit, battery_power_demand, desired_power, battery_power_demand, available_grid, demanded)
+                    print(f"Power demanded from modules: {demanded}")
                     power_to_attach = self.checkModuleToDetach(demanded)
                     max_power = power_to_attach + available_grid + battery_power_demand
                     if max_power != desired_power:
-                        charge_duration = int(car['needed_energy'] / max_power * 60)
+                        charge_duration = int((car['needed_energy'] / max_power) * 60)
                         print(f"New charging time {charge_duration}")
                     print(f"Charging with grid {available_grid} kW battery: {battery_power_demand} kW modules: {power_to_attach} kW")
                 else:
                     print("Battery managing")
-                    battery_power_demand = (self.battery_capacity - self.battery_lower_limit) * self.multiplier
+                    battery_power_demand = desired_power - available_grid #making sure that it doesn't change
 
                 print(f"Charging with grid {available_grid} kW and battery {battery_power_demand} kW")
                 power_to_return = available_grid
@@ -182,7 +184,7 @@ class Station:
             car['assigned_power'] = power - power_to_detach
             sum_power+=power_to_detach
 
-        print(f"Only {sum_power}/{demanded_power} kW can be applied")
+        print(f"{sum_power}/{demanded_power} kW can be applied")
         return sum_power
 
     
