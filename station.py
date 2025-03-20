@@ -215,7 +215,7 @@ class Station:
 
 #BATTERY 
     def checkBatteryState(self):
-        print(f"Battery state: { self.battery_capacity} kWh power ready: {self.battery_capacity*self.multiplier} kW")
+        print(f"Battery state: {self.battery_capacity}/{self.battery_lower_limit} kWh power ready: {(self.battery_capacity-self.battery_lower_limit)*self.multiplier} kW")
         return self.battery_capacity
 
 
