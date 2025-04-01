@@ -26,6 +26,8 @@ class Simulation:
                 self.grid_power, 
                 self.average_time,
                 self.chargers_quantity,
+                self.modules_quantity,
+                self.slots,
                 self.chargers_power,
             ) = self.gui.insertSimulationParameter()
 
@@ -39,14 +41,17 @@ class Simulation:
         self.modules = Modules()
 
         self.multiplier = 60 // self.desired_charging_time
-        module_power = self.chargers_power / self.chargers_quantity 
+        self.module_power = self.chargers_power / self.modules_quantity
         self.station_load = self.station_load_cars + self.station_load_trucks
-        self.chargers = [simpy.Resource(env, capacity=2) for _ in range(self.chargers_quantity)]
-        self.charger_modules = {i: [module_power] * self.chargers_quantity for i in range(self.chargers_quantity * 2)}  
+        self.chargers = [simpy.Resource(env, capacity=self.slots) for _ in range(self.chargers_quantity)]
+        self.charger_modules = {i: [self.module_power] * self.modules_quantity for i in range(self.chargers_quantity)}  
 
-
+        
         self.time_table = []
+        self.type_time = {}
         self.charging_times = []
+        self.charging_times_cars = []
+        self.charging_times_trucks = []
         self.car_priorities = []
         self.car_queue = []
 
@@ -88,14 +93,19 @@ class Simulation:
         self.grid_power_data=self.grid.getTable()
 
         self.gui.showSimulationParametersWithPlots(
-                                                   self.battery_capacity,
-                                                   self.time_table, 
-                                                   self.energy_table, 
-                                                   self.station_load, 
-                                                   self.desired_charging_time, 
-                                                   self.charging_times, 
-                                                   self.grid_power_data, 
-                                                   self.battery_capacity_data)
+            self.battery_capacity,
+            self.time_table, 
+            self.energy_table, 
+            self.station_load, 
+            self.desired_charging_time, 
+            self.charging_times, 
+            self.grid_power_data, 
+            self.battery_capacity_data,
+            self.charging_times_cars,
+            self.charging_times_trucks,
+            self.station_load_cars,  # Pass the number of cars
+            self.station_load_trucks  # Pass the number of trucks
+        )
 
     def stationRun(self, name, type, arriving_time, charge_duration):
         if type==1:
@@ -107,12 +117,16 @@ class Simulation:
 
         desired_power = vehicle['needed_energy']*self.multiplier
 
-        print("\n")
-        print(f"{name} arrived at {arriving_time} [t.u] with energy needed {vehicle['needed_energy']} kWh")
-        print(f"Desired power: {desired_power}")
+        if type != 1:
+            percent_of_usage = int(self.modules_quantity * 0.65)
+            
+            power_assumption = percent_of_usage*self.module_power 
+            if power_assumption < desired_power:
+                desired_power = power_assumption
+                charge_duration=self.ev.manageTruck(vehicle['needed_energy'], power_assumption)
 
         available_grid = self.grid.checkGridState()
-        available_station, available_slot = self.checkStationAvailability(desired_power)
+        available_station, available_slot = self.checkStationAvailability(desired_power, type)
         available_battery = self.battery.checkBatteryState()
         lower_limit = self.battery.getLower()
 
@@ -125,7 +139,7 @@ class Simulation:
             vehicle['assigned_power'] = desired_power
             vehicle['charger_index'] = available_station
             vehicle['charger_slot'] = available_slot
-            
+    
 
             if desired_power <= available_grid: 
 
@@ -183,11 +197,11 @@ class Simulation:
             print(f"{name} is waiting in queue...")
             self.car_queue.append(vehicle)
             return 
-        self.updateData(charge_duration)
+        self.updateData(charge_duration, type)
         self.car_priorities.remove(vehicle)
         
                     
-    def checkStationAvailability(self, desired_power):
+    def checkStationAvailability(self, desired_power, type):
         for i, charger in enumerate(self.chargers):
             occupied_slots = charger.count  
             free_slots = charger.capacity - occupied_slots  
@@ -197,19 +211,24 @@ class Simulation:
             print(f"Charger {i}: {occupied_slots}/{charger.capacity} slots occupied | Power: {total_power} kW")
 
 
-
             if free_slots > 0 and (total_power + desired_power) <= self.grid_power:
                 for slot in range(charger.capacity):
                     if slot >= occupied_slots: 
                         print(f"Found free slot at charger {i}, slot {slot}")
                         return i, slot
 
+
         print("No suitable charger available (exceeds power limit or no slots).")
         return None, None
 
 
-    def updateData(self, time):
+    def updateData(self, time, type):
         self.battery.insertDataToTable()
         self.grid.insertDataToTable()
         self.charging_times.append(time)
+        if type == 1:
+            self.charging_times_cars.append(time)
+        else:
+            self.charging_times_trucks.append(time)
+        self.type_time[type] = time
         pass
