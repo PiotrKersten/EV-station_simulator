@@ -1,0 +1,2 @@
+# To compile
+pyinstaller --onefile --name TamoilSimulation --paths=. --add-data "Motus.ico;." project/core/main.py

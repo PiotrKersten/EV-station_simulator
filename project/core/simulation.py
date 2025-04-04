@@ -29,6 +29,7 @@ class Simulation:
                 self.modules_quantity,
                 self.slots,
                 self.chargers_power,
+                self.generation_choice,
             ) = self.gui.insertSimulationParameter()
 
         except ValueError:
@@ -49,6 +50,7 @@ class Simulation:
         
         self.time_table = []
         self.type_time = {}
+        self.arrival_time = []
         self.charging_times = []
         self.charging_times_cars = []
         self.charging_times_trucks = []
@@ -63,34 +65,33 @@ class Simulation:
 
     def run(self):
         processes = []  
-        if self.station_load_trucks > 0:
-            ratio = self.station_load_cars / self.station_load_trucks
-        else:
-            ratio = float('inf') 
 
+        if self.generation_choice:
+            self.distributeEvenly()
+        else:
+            self.distributeRandomly()
         cars_count = 0
         trucks_count = 0
 
-
-        for i in range(self.station_load):
-
+        for i, el in enumerate(self.distributed_vehicles):
             yield self.env.timeout(self.time_between)
             self.time_table.append(self.time_between)
 
-            if trucks_count < self.station_load_trucks and (cars_count / (trucks_count + 1) >= ratio):
-                process = self.env.process(self.stationRun(f'Truck {trucks_count}', 2, i * 1, self.desired_charging_time))
-                trucks_count += 1
-            else:
+            if 'car' in el:
                 process = self.env.process(self.stationRun(f'Car {cars_count}', 1, i * 1, self.desired_charging_time))
                 cars_count += 1
-        
-    
+            if 'truck' in el:
+                process = self.env.process(self.stationRun(f'Truck {cars_count}', 2, i * 1, self.desired_charging_time))
+                trucks_count += 1
+
+
             processes.append(process)
 
         yield self.env.all_of(processes)
-        self.energy_table=self.ev.getTable()
-        self.battery_capacity_data=self.battery.getTable()
-        self.grid_power_data=self.grid.getTable()
+        self.energy_table = self.ev.getTable()
+        self.battery_capacity_data = self.battery.getTable()
+        self.grid_power_data = self.grid.getTable()
+
 
         self.gui.showSimulationParametersWithPlots(
             self.battery_capacity,
@@ -104,8 +105,34 @@ class Simulation:
             self.charging_times_cars,
             self.charging_times_trucks,
             self.station_load_cars,  # Pass the number of cars
-            self.station_load_trucks  # Pass the number of trucks
+            self.station_load_trucks,  # Pass the number of trucks
+            self.arrival_time,
+            self.type_time
         )
+
+    def distributeEvenly(self):
+
+        self.distributed_vehicles = []
+        ratio_cars = self.station_load_trucks / self.station_load_cars if self.station_load_cars > 0 else 0 
+        ratio_trucks = self.station_load_cars / self.station_load_trucks if self.station_load_trucks > 0 else 0 
+
+        i, j = 0, 0
+        for k in range(self.station_load):
+            if i < self.station_load_cars and (j >= ratio_cars* i or j >= self.station_load_trucks): 
+                self.distributed_vehicles.append('car')
+                i += 1
+            elif j < self.station_load_trucks:  
+                self.distributed_vehicles.append('truck')
+                j += 1
+
+    def distributeRandomly(self):
+
+        cars = ['car'] * self.station_load_cars
+        trucks = ['truck'] * self.station_load_trucks
+        combined = cars + trucks
+        random.shuffle(combined)  
+        self.distributed_vehicles = combined
+
 
     def stationRun(self, name, type, arriving_time, charge_duration):
         if type==1:
@@ -197,7 +224,8 @@ class Simulation:
             print(f"{name} is waiting in queue...")
             self.car_queue.append(vehicle)
             return 
-        self.updateData(charge_duration, type)
+        vehicle['charge_duration'] = charge_duration
+        self.updateData(charge_duration, arriving_time, type, vehicle)
         self.car_priorities.remove(vehicle)
         
                     
@@ -222,13 +250,13 @@ class Simulation:
         return None, None
 
 
-    def updateData(self, time, type):
+    def updateData(self, charging_time, arrived_at, type, vehicle):
         self.battery.insertDataToTable()
         self.grid.insertDataToTable()
-        self.charging_times.append(time)
+        self.charging_times.append(charging_time)
         if type == 1:
-            self.charging_times_cars.append(time)
+            self.charging_times_cars.append(charging_time)
         else:
-            self.charging_times_trucks.append(time)
-        self.type_time[type] = time
-        pass
+            self.charging_times_trucks.append(charging_time)
+        self.type_time[self.env.now] = vehicle
+        self.arrival_time.append(self.env.now)

@@ -20,13 +20,14 @@ class Gui:
     def insertSimulationParameter(self):
         root = tk.Tk()
         root.title("Simulation Parameters")
-        root.geometry("675x400")  
+        root.geometry("750x500")  
 
         root.iconbitmap(self.path)
 
         text_font = ('Helvetica', 14)
         font = ('Helvetica', 11)
         edit_font = ('Helvetica', 10)
+        edit_font1 = ('Helvetica', 9, 'bold')
 
         text_frame1 = tk.Frame(root)
         frame1 = tk.Frame(root, relief="ridge", bd=2)
@@ -48,7 +49,7 @@ class Gui:
         text_frame3.grid(row=0, column=2, padx=10, pady=10, sticky="n")
         frame3.grid(row=1, column=2, padx=10, pady=10, sticky="n")
 
-        frame4.grid(row=2, column=0, columnspan=3, pady=20, sticky="s")  
+        frame4.grid(row=2, column=0, columnspan=3, pady=15, sticky="s")  
 
         # Set default values here
         default_station_load_cars = 100
@@ -63,6 +64,7 @@ class Gui:
         default_modules_quantity = 8
         default_slots_quantity = 2
         default_chargers_power = 300
+        checkbox_state = tk.BooleanVar(value=True)
 
         tk.Label(text_frame1, text="Quantities", font=text_font).pack()
 
@@ -76,7 +78,31 @@ class Gui:
         entry12.insert(0, default_station_load_trucks) 
         entry12.pack()
 
-        tk.Label(frame1, text="Chargers quantity", font=font).pack()
+        
+
+        checkbox1 = tk.Radiobutton(
+            frame1,
+            text="Distribute vehicles evenly",
+            font = edit_font1,
+            variable=checkbox_state,
+            value=True,
+            anchor="w", 
+            width=25    
+        )
+        checkbox1.pack(pady=2, anchor="w") 
+
+        checkbox2 = tk.Radiobutton(
+            frame1,
+            text="Distribute vehicles randomly",
+            font = edit_font1,
+            variable=checkbox_state,
+            value=False,
+            anchor="w",  
+            width=25     
+        )
+        checkbox2.pack(pady=2, anchor="w")  
+
+        tk.Label(frame1, text="\nChargers quantity", font=font).pack()
         entry13 = tk.Entry(frame1)
         entry13.insert(0, default_chargers_quantity) 
         entry13.pack()
@@ -87,9 +113,9 @@ class Gui:
         entry14.pack()
 
         tk.Label(frame1, text="Slots per charger", font=font).pack()
-        entry15 = tk.Entry(frame1, width=8)
+        entry15 = tk.Entry(frame1)
         entry15.insert(0, default_slots_quantity) 
-        entry15.pack()
+        entry15.pack(pady=(0, 10))
 
         tk.Label(text_frame2, text="Electrical parameters", font=text_font).pack()
     
@@ -104,9 +130,9 @@ class Gui:
         entry5.pack()
         
         tk.Label(frame2, text="\nGrid power [kW]:", font=font).pack()
-        entry51 = tk.Entry(frame2, width=8)
+        entry51 = tk.Entry(frame2)
         entry51.insert(0, default_grid_power)
-        entry51.pack()
+        entry51.pack(pady=(0, 12))
 
 
         tk.Label(text_frame3, text="Time parameters", font=text_font).pack()
@@ -123,15 +149,15 @@ class Gui:
 
         tk.Label(frame3, text="\nGenerate EV arriving time (alternatively):", font=font).pack()
 
-        tk.Label(frame3, text="from [t.u]:", font=edit_font).pack(side=tk.LEFT)
+        tk.Label(frame3, text="from [t.u]:", font=edit_font).pack(side=tk.LEFT, pady=(0, 10))
         entry3 = tk.Entry(frame3, width=6)
         entry3.insert(0, default_time_from)
-        entry3.pack(side=tk.LEFT)
+        entry3.pack(side=tk.LEFT, pady=(0, 10))
 
-        tk.Label(frame3, text=" to [t.u]:", font=edit_font).pack(side=tk.LEFT)
+        tk.Label(frame3, text=" to [t.u]:", font=edit_font).pack(side=tk.LEFT, pady=(0, 10))
         entry4 = tk.Entry(frame3, width=6) 
         entry4.insert(0, default_time_to) 
-        entry4.pack(side=tk.LEFT)
+        entry4.pack(side=tk.LEFT, pady=(0, 10))
 
 
         result = []  
@@ -150,7 +176,7 @@ class Gui:
                 modules_quantity = int(entry14.get())
                 slots_quantity = int(entry15.get())
                 chargers_power = int(entry50.get())
-
+                generation_choice = checkbox_state.get()
                 print("Values saved")
                 
                 result.extend([
@@ -164,7 +190,8 @@ class Gui:
                     chargers_quantity,
                     modules_quantity,
                     slots_quantity,
-                    chargers_power
+                    chargers_power, 
+                    generation_choice
                 ])
                 root.quit() 
                 root.destroy()
@@ -176,7 +203,8 @@ class Gui:
                     default_station_load_trucks, default_charging_time, 
                     default_battery_capacity, default_grid_power, 
                     default_average_time, default_chargers_quantity, 
-                    default_chargers_power, default_modules_quantity
+                    default_chargers_power, default_modules_quantity,
+                    generation_choice
                 ])
                 root.quit()
                 root.destroy()
@@ -187,12 +215,13 @@ class Gui:
             root.quit()  
             root.destroy()
             self.flag = 0
+        self.createMenuBar(root, False)
         root.protocol("WM_DELETE_WINDOW", close)
         root.mainloop()
 
         return result
    
-    def showSimulationParametersWithPlots(self, battery_max, time_table, energy_table, station_load, desired_charging_time, charging_times_data, grid_power_data, battery_capacity_data, charging_times_cars, charging_times_trucks, station_load_cars, station_load_trucks):
+    def showSimulationParametersWithPlots(self, battery_max, time_table, energy_table, station_load, desired_charging_time, charging_times_data, grid_power_data, battery_capacity_data, charging_times_cars, charging_times_trucks, station_load_cars, station_load_trucks, arrival_times, type_time):
         self.battery_capacity = battery_max
         self.time_table = time_table
         self.energy_table = energy_table
@@ -204,11 +233,13 @@ class Gui:
         self.charging_times_cars = charging_times_cars
         self.charging_times_trucks = charging_times_trucks
         self.station_load_cars = station_load_cars 
-        self.station_load_trucks = station_load_trucks  
+        self.station_load_trucks = station_load_trucks
+        self.arrival_times = arrival_times  
+        self.type_time = type_time
 
         root = tk.Tk()
         root.title("Simulation Parameters")
-        root.geometry(f"1800x900")
+        root.geometry(f"1900x1000")
         root.iconbitmap(self.path)
 
         self.createMenuBar(root)
@@ -219,24 +250,27 @@ class Gui:
         root.protocol("WM_DELETE_WINDOW", lambda: self.close(root))
         root.mainloop()
 
-    def createMenuBar(self, root):
+    def createMenuBar(self, root, option=True):
         menu_bar = tk.Menu(root)
+        match option:
+            case True:
+                file_menu = tk.Menu(menu_bar, tearoff=0)
+                file_menu.add_command(label="Save", command=lambda: self.saveFile())
+                menu_bar.add_cascade(label="File", menu=file_menu)
 
-        # File menu
-        file_menu = tk.Menu(menu_bar, tearoff=0)
-        file_menu.add_command(label="Save", command=lambda: self.saveFile())
-        menu_bar.add_cascade(label="File", menu=file_menu)
+                # Edit menu
+                edit_menu = tk.Menu(menu_bar, tearoff=0)
+                edit_menu.add_command(label="Restart simulation", command=lambda: self.restart(root))
+                edit_menu.add_command(label="Close", command=lambda: self.close(root))
+                menu_bar.add_cascade(label="Edit", menu=edit_menu)
 
-        # Edit menu
-        edit_menu = tk.Menu(menu_bar, tearoff=0)
-        edit_menu.add_command(label="Restart simulation", command=lambda: self.restart(root))
-        edit_menu.add_command(label="Close", command=lambda: self.close(root))
-        menu_bar.add_cascade(label="Edit", menu=edit_menu)
-
-        # Help menu
-        help_menu = tk.Menu(menu_bar, tearoff=0)
-        help_menu.add_command(label="View Help", command=lambda: self.showHelp())
-        menu_bar.add_cascade(label="Help", menu=help_menu)
+                help_menu = tk.Menu(menu_bar, tearoff=0)
+                help_menu.add_command(label="Documentation", command=lambda: self.showHelp())
+                menu_bar.add_cascade(label="Help", menu=help_menu)
+            case False:
+                help_menu = tk.Menu(menu_bar, tearoff=0)
+                help_menu.add_command(label="Documentation", command=lambda: self.showHelp())
+                menu_bar.add_cascade(label="Help", menu=help_menu)
 
         root.config(menu=menu_bar)
 
@@ -279,37 +313,91 @@ class Gui:
 
         fig, axes = plt.subplots(4, 1, figsize=(10, 15))
 
-        axes[0].plot(self.grid_power_data, label="Grid Power (kW)")
-        axes[0].set_xlabel('Time (t.u.)')
-        axes[0].xaxis.set_label_coords(0.95, -0.1)
-        axes[0].set_ylabel('Grid power (kW)')
-        axes[0].set_title('Grid power over time')
+
+        min_length = min(len(self.arrival_times), len(self.energy_table))
+        arrival_times_synced = self.arrival_times[:min_length]
+        energy_table_synced = self.energy_table[:min_length]
+
+        axes[0].plot(self.arrival_times, self.grid_power_data, label="Grid power (kW)")
+        axes[0].set_xlabel('Simulation time (t.u.)', fontsize=8, loc='right') 
+        axes[0].set_ylabel('Grid power (kW)', fontsize=8) 
+        axes[0].tick_params(axis='both', labelsize=7) 
+        axes[0].set_title('Grid power over time', fontsize=11) 
+        axes[0].grid(True)
 
         max_capacity = max(self.battery_capacity_data)
         lower_limit = 0.2 * self.battery_capacity
-
-        axes[1].plot(self.battery_capacity_data, label="Battery Capacity (kWh)", color='orange')
+        axes[1].plot(self.arrival_times, self.battery_capacity_data, label="Battery capacity (kWh)", color='orange')
+        axes[1].set_xlabel('Simulation time (t.u.)', fontsize=8, loc='right')  
+        axes[1].set_ylabel('Battery capacity (kWh)', fontsize=8)  
+        axes[1].tick_params(axis='both', labelsize=7) 
+        axes[1].set_title('Capacity over time', fontsize=11)
         axes[1].axhline(y=max_capacity, color='red', linestyle='dashed', linewidth=1, label=f'Upper limit 80%')
-        axes[1].axhline(y=lower_limit, color='blue', linestyle='dashed', linewidth=1, label=f'Lower Limit 20%')
-        axes[1].set_xlabel('Time (t.u.)')
-        axes[1].xaxis.set_label_coords(0.95, -0.1)
-        axes[1].set_ylabel('Battery capacity (kWh)')
-        axes[1].set_title('Capacity over time')
-        axes[1].legend()
+        axes[1].axhline(y=lower_limit, color='blue', linestyle='dashed', linewidth=1, label=f'Lower limit 20%')
+        axes[1].legend(fontsize=9) 
+        axes[1].grid(True)
 
-        axes[2].scatter(range(len(self.charging_times_cars)), self.charging_times_cars, label='Cars', color='blue', alpha=0.5, s=20)
-        axes[2].scatter(range(len(self.charging_times_trucks)), self.charging_times_trucks, label='Trucks', color='orange', alpha=0.5, s=20)
-        axes[2].get_xaxis().set_visible(False)
-        axes[2].set_ylabel('Charging Time (t.u.)')
-        axes[2].set_title('Charging time distribution')
-        axes[2].legend()
-        axes[2].grid(True)  # Add grid to the scatter plot
+        """
+        axes[2].bar(self.arrival_times[:len(self.charging_times_cars)], self.charging_times_cars, label='Cars', color='blue', alpha=0.7, width=8.0, align='center')
+        axes[2].bar(self.arrival_times[:len(self.charging_times_trucks)], self.charging_times_trucks, label='Trucks', color='orange', alpha=0.7, width=8.0, align='center')
+        axes[2].set_xlabel('Simulation time (t.u.)', fontsize=8, loc='right') 
+        axes[2].set_ylabel('Charging time (t.u.)', fontsize=8)  
+        axes[2].tick_params(axis='both', labelsize=7)  
+        axes[2].set_title('Charging time distribution', fontsize=11)
+        axes[2].legend(fontsize=9) 
+        axes[2].grid(True)
+        """
 
-        sns.histplot(self.energy_table, bins=20, kde=True, ax=axes[3], color='blue', edgecolor='black')
-        axes[3].set_xlabel("Energy [kWh]")
-        axes[3].xaxis.set_label_coords(0.95, -0.1)
-        axes[3].set_ylabel('Count')
-        axes[3].set_title("EV's energy needs distribution")
+        keys = list(self.type_time.keys())
+        charge_duration = [entry['charge_duration'] for entry in self.type_time.values()]
+        vehicle_types = ['Car' if 'Car' in entry['name'] else 'Truck' for entry in self.type_time.values()]
+        car_keys = [keys[i] for i in range(len(keys)) if vehicle_types[i] == 'Car']
+        cars_charge_duration= [charge_duration[i] for i in range(len(charge_duration)) if vehicle_types[i] == 'Car']
+        truck_keys = [keys[i] for i in range(len(keys)) if vehicle_types[i] == 'Truck']
+        trucks_charge_duration = [charge_duration[i] for i in range(len(charge_duration)) if vehicle_types[i] == 'Truck']
+
+        axes[2].bar(
+            car_keys, 
+            cars_charge_duration, 
+            label='Cars', 
+            color='blue', 
+            alpha=0.7, 
+            width=9.0, 
+            align='center'
+        )
+        axes[2].bar(
+            truck_keys, 
+            trucks_charge_duration, 
+            label='Trucks', 
+            color='orange', 
+            alpha=0.7, 
+            width=9.0, 
+            align='center'
+        )
+        axes[2].set_xlabel('Simulation time (t.u.)', fontsize=8, loc='right') 
+        axes[2].set_ylabel('Charging time (t.u.)', fontsize=8)  
+        axes[2].tick_params(axis='both', labelsize=7)  
+        axes[2].set_title('Charging time distribution', fontsize=11)
+        axes[2].legend(fontsize=9) 
+        axes[2].grid(True)
+        
+
+
+        axes[3].bar(
+            arrival_times_synced, 
+            energy_table_synced, 
+            label="Energy needs (kWh)", 
+            color='green', 
+            alpha=0.7, 
+            width=9.0,  
+            align='center'
+        )
+        axes[3].set_xlabel("Simulation time (t.u.)", fontsize=8, loc='right') 
+        axes[3].set_ylabel('Energy (kWh)', fontsize=8)
+        axes[3].tick_params(axis='both', labelsize=7)
+        axes[3].set_title("Energy needs over time", fontsize=11)
+        axes[3].grid(True)
+        axes[3].legend(fontsize=9) 
 
         plt.tight_layout()
 
