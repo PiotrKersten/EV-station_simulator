@@ -477,7 +477,7 @@ class Gui:
         self.flag = 0
 
     def showHelp(self):
-        webbrowser.open("https://kerstentechniek.sharepoint.com/_layouts/15/sharepoint.aspx")  # TODO Replace with the actual help link
+        webbrowser.open("https://github.com/PiotrKersten/EV-station_simulator/blob/main/helper/Simulator%20manual.pdf")  # TODO Replace with the actual help link
 
     def getFlag(self):
         return self.flag
