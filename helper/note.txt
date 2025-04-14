@@ -1,3 +1,0 @@
-# To compile
-pyinstaller --onefile --name EVSim --paths=. --add-data "Motus.ico;." project/core/main.py
-git checkout -b release-branch

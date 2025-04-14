@@ -1,0 +1,2 @@
+# To compile
+pyinstaller --onefile --name EVSim --paths=. --add-data "Motus.ico;." --add-data "Motus Open Remote Logo.png;." project/core/main.py
