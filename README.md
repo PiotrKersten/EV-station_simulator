@@ -37,8 +37,8 @@ This project simulates a real-time electric vehicle (EV) charging station with m
 1. Download the executable file EVSim.exe from the main directory.
 2. Run the exe file.
 3. Using the GUI
-- The GUI allows users to:
-- Configure simulation parameters such as vehicle quantities, charger power, and battery capacity.
-- View simulation results, including plots for energy usage, grid power demand, and charging times.
-- Save simulation data and plots as JSON or PNG files.
+  - The GUI allows users to:
+  - Configure simulation parameters such as vehicle quantities, charger power, and battery capacity.
+  - View simulation results, including plots for energy usage, grid power demand, and charging times.
+  - Save simulation data and plots as JSON or PNG files.
 4. For more details check dev\helper\Simulator manual.pdf
