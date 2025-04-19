@@ -42,3 +42,6 @@ This project simulates a real-time electric vehicle (EV) charging station with m
   - View simulation results, including plots for energy usage, grid power demand, and charging times.
   - Save simulation data and plots as JSON or PNG files.
 - For more details check dev\helper\Simulator manual.pdf
+- 
+### **Common issue: crdownload**
+If file was downloaded as .crdownload and not as .exe in Microsoft Edge, type 'edge://downloads/all', then decide to keep this file. 
