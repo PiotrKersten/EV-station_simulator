@@ -580,7 +580,7 @@ class Gui:
         self.flag = 0
 
     def showHelp(self):
-        webbrowser.open("https://github.com/PiotrKersten/EV-station_simulator/blob/main/helper/Simulator%20manual.pdf") 
+        webbrowser.open("https://github.com/PiotrKersten/EV-station_simulator/blob/main/dev/helper/Simulator%20manual.pdf") 
     def getFlag(self):
         return self.flag
     
